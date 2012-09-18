@@ -4,7 +4,7 @@
 #
 # from rimudns import RimuDNS
 #
-# api_key = '4ad62e78ac5595f662004b0f01c1a723'
+# api_key = 'GETYOURAPIKEYFROMTHECONTROLPANEL'
 # dns = DNS(api_key)
 #
 # dns.change_ip('192.168.59.133', '192.168.59.132')
