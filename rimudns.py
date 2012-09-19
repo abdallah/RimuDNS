@@ -174,14 +174,13 @@ class RimuDNS:
         try:
             response = urllib2.urlopen(req).read()
             if self.debug: print response
-            records = []
+            records = {}
             root = objectify.fromstring(response)
             if str(root.is_ok).startswith('OK'):
                 for record in root.actions.action.iterchildren():
-                    recordinfo = {}
-                    for item in record.items():
-                        recordinfo[item[0]]= item[1]
-                    records.append(recordinfo) 
+                    record_type = record.attrib['type']
+                    if not records.has_key(record_type): records[record_type] = []
+                    records[record_type].append(record.attrib)
                 return records
         except Exception, e:
             print e.read()
