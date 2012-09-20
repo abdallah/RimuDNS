@@ -49,6 +49,7 @@
 
 import urllib2
 from lxml import objectify
+from zonehandle import ZoneHandle
 
 class RimuDNS:
     
@@ -96,7 +97,7 @@ class RimuDNS:
                         zoneinfo[item[0]]= item[1]
                     zones.append(zoneinfo) 
         except Exception, e:
-            pass
+            if self.debug: print e.read()
         return zones
         
     def create_zone(self, zone_name):
@@ -185,6 +186,8 @@ class RimuDNS:
         except Exception, e:
             print e.read()
             
+
+            
     def set_record(self, host, value, record_type='A', prio=None, ttl=None):
         '''Set an IP Address (A) record
         https://rimuhosting.com/dns/dyndns.jsp?action=SET&name=example.com&value=10.0.0.1&type=A&api_key=apikeyvaluehere
@@ -269,3 +272,54 @@ class RimuDNS:
         except urllib2.HTTPError, e:
             if self.debug: "Error: %s" % e.read()
             return False
+        
+    def to_file(self, zone_name, file):
+        '''Export zone to file
+        
+        '''
+        try:
+            records_dict = self.list_records(zone_name, True)
+            if records_dict:
+                zh = ZoneHandle(zone_name)
+                zh.from_records_dict(records_dict)
+                zh.to_file(file)
+        except Exception, e:
+            if self.debug: print e.read()
+            
+    def import_zone(self, zone_name, method, param=None):
+        '''Import zone 
+        methods are AXFR, FILE, TEXT, GUESS
+        
+        '''
+        zh = ZoneHandle(zone_name)
+        try:
+            if method==ZoneHandle.AXFR:
+                zh.from_axfr(param)
+            elif method==ZoneHandle.IMPORT_FILE:
+                zh.from_file(param)
+            elif method==ZoneHandle.IMPORT_TEXT:
+                zh.from_text(param)
+            elif method==ZoneHandle.IMPORT_DICT:
+                zh.from_records_dict(param)
+            else:
+                zh.from_guessing()
+                
+        except Exception, e:
+                if self.debug: print e.read()
+                return False
+            
+        records_dict = zh.to_records_dict()
+        created = self.create_zone(zone_name)
+        for record_type, records in records:
+            if record_type=='SOA': continue
+            for record in records:
+                try:
+                    self.set_record(record['name'], record['content'], record_type, record['prio'], record['ttl'])
+                except Exception, e:
+                    if self.debug: print e.read()
+                    
+        return True
+            
+            
+            
+            
