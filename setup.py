@@ -24,7 +24,7 @@ except ImportError:
         if line.startswith('VERSION'):
             VERSION = \
                 line.split('=')[1].replace('"', '').replace("'", '').strip()
-requirements = []
+requirements = ['lxml', 'urllib2', 'pythondns']
 
 setup(name=NAME,
       version=VERSION,
@@ -36,7 +36,6 @@ setup(name=NAME,
       url=GITHUB_URL,
       long_description=read('README.md'),
       license='GPLv3',
-      include_package_data=True,
       zip_safe=False,
       packages=find_packages(exclude=['tests', 'debian']),
       classifiers=[
