@@ -3,12 +3,12 @@ RimuDNS
 
 RimuHosting Python DNS tools
 
-https://rimuhosting.com/dns/dyndns.jsp
-
-https://zonomi.com/app/dns/dyndns.jsp
+Documentation for the API can be found [here](https://rimuhosting.com/dns/dyndns.jsp) and [here](https://zonomi.com/app/dns/dyndns.jsp) for RimuHosting and Zonomi respectively.
 
 The RimuDNS class is a wrapper around the REST API calls. 
 
+Usage
+-----
     from rimudns import RimuDNS
 
     api_key = 'GETYOURAPIKEYFROMTHECONTROLPANEL'

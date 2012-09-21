@@ -4,7 +4,14 @@ import dns.name
 from dns.rdataclass import *
 from dns.rdatatype import *
 import dns.rdtypes.ANY
+import dns.rdtypes.ANY.CNAME
+import dns.rdtypes.ANY.SOA
+import dns.rdtypes.ANY.TXT
+import dns.rdtypes.ANY.NS
+import dns.rdtypes.ANY.MX
+import dns.rdtypes.IN.A
 import dns.rdtypes.IN
+import re
 
 class ZoneHandle:
     IMPORT_AXFR = 1
@@ -14,9 +21,9 @@ class ZoneHandle:
     IMPORT_GUESS = 5
     
     def __init__(self, domain_name):
-        #self.domain_name = dns.name.Name(domain_name)
+        self.dns_name = dns.name.Name((domain_name,))
         self.domain_name = domain_name
-        self.zone = dns.zone.Zone(self.domain_name)
+        self.zone = dns.zone.Zone(self.dns_name)
         self.possible_subdomains = ['@', 
                                     'www', 'www1', 'www2', 
                                     'ftp', 
@@ -27,7 +34,7 @@ class ZoneHandle:
         
     def from_axfr(self, dns_server):
         try:
-            self.zone = dns.zone.from_xfr(dns.query.xfr(dns_server, domain_name))
+            self.zone = dns.zone.from_xfr(dns.query.xfr(dns_server, self.domain_name))
             return True
         except Exception, e:
             if self.debug: print e
@@ -48,47 +55,59 @@ class ZoneHandle:
         except Exception, e:
             if self.debug: print e
             return False
-        
+    
     def from_records_dict(self, records_dict):
         try:
-            for rtype, records in records_dict:
+            zone_text = ''
+            for rtype in records_dict.keys():
+                records = records_dict[rtype]
                 if rtype=='SOA' and len(records)>0: 
                     soa_rec = records[0]
                     mname, rname, serial, refresh, retry, expire, minimum = soa_rec['content'].split(' ')
                     if self.domain_name!=soa_rec['name']:
                         if self.debug: print 'Domain name does not match'
                         return False
-                    rd_set = self.zone.find_rdataset(self.domain_name, rdtype=SOA , create=True)
-                    rdata = dns.rdtypes.ANY.SOA.SOA(IN, SOA, mname, rname, serial, refresh, retry, expire, minimum)
-                    rd_set.add(rdata)
+                    zone_text += '\n; SOA Record\n'
+                    zone_text += '$ORIGIN %s.\n' % self.domain_name
+                    zone_text += '$TTL 1h\n'
+                    zone_text += '%s. IN SOA %s %s (\n' % (self.domain_name, mname, rname)
+                    zone_text += '  %s ; serial number of this zone file\n' % serial
+                    zone_text += '  %s ; slave refresh\n' % refresh
+                    zone_text += '  %s ; slave retry time in case of a problem\n' % retry
+                    zone_text += '  %s ; slave expiration time\n' % expire
+                    zone_text += '  %s ; maximum caching time in case of failed lookups\n' % minimum
+                    zone_text += ')\n'
                 if rtype=='A' and len(records)>0:
                     for record in records:
-                        rd_set = self.zone.find_rdataset(self.domain_name, rdtype=A, create=True)
-                        rdata = dns.rdtypes.IN.A.A(IN, A, address=record['content'])
-                        rd_set.add(rdata)
+                        ttl = re.findall('\d+', record['ttl'])[0]
+                        zone_text += '%s  %s  IN  A %s\n' % (record['name'], ttl, record['content'])
                 if rtype=='MX' and len(records)>0:
                     for record in records:
-                        rd_set = self.zone.find_rdataset(self.domain_name, rdtype=MX, create=True)
-                        rdata = dns.rdtypes.ANY.MX.MX(IN, MX, record['prio'], record['content'])
-                        rd_set.add(rdata)
+                        ttl = re.findall('\d+', record['ttl'])[0]
+                        if record['name']==self.domain_name:
+                            record['name'] = '@'
+                        zone_text += '%s  %s  IN  MX  %s  %s\n' % (record['name'], ttl, record['prio'], record['content'])
                 if rtype=='NS' and len(records)>0:
                     for record in records:
-                        rd_set = self.zone.find_rdataset(self.domain_name, rdtype=NS, create=True)
-                        rdata = dns.rdtypes.ANY.NS.NS(IN, NS, record['content'])
-                        rd_set.add(rdata)
+                        ttl = re.findall('\d+', record['ttl'])[0]
+                        zone_text += '@  %s  IN  NS %s\n' % (ttl, record['content'])
                 if rtype=='TXT' and len(records)>0:
                     for record in records:
-                        rd_set = self.zone.find_rdataset(self.domain_name, rdtype=TXT, create=True)
-                        rdata = dns.rdtypes.ANY.TXT.TXT(IN, TXT, record['content'])
-                        rd_set.add(rdata)
+                        ttl = re.findall('\d+', record['ttl'])[0]
+                        zone_text += '%s  %s  IN  TXT "%s"\n' % (record['name'], ttl, record['content'])
                 if rtype=='CNAME' and len(records)>0:
                     for record in records:
-                        rd_set = self.zone.find_rdataset(dns.name.Name(record['name']), rdtype=CNAME, create=True)
-                        rdata = dns.rdtypes.ANY.CNAME.CNAME(IN, CNAME, record['content'])
-                        rd_set.add(rdata)
-
+                        ttl = re.findall('\d+', record['ttl'])[0]
+                        if record['content']==self.domain_name:
+                            record['content'] = '@'
+                        zone_text += '%s  %s  IN  CNAME  %s\n' % (record['name'], ttl, record['content'])
+                
+            print zone_text
+            self.zone = dns.zone.from_text(zone_text)
+            return self.zone
 
         except Exception, e:
+            print e
             if self.debug: print e
             return False
         
@@ -244,7 +263,7 @@ class ZoneHandle:
             if self.debug: print e
             return False
         
-    def _get_txt(self):
+    def _guess_txt(self):
         try: 
             txt_answer = dns.resolver.query(self.domain_name, 'TXT')
             for txt_record in txt_answer.rrset:
@@ -258,66 +277,3 @@ class ZoneHandle:
 
     def to_file(self, file, sorted=True, relativize=True):
         self.zone.to_file(file, sorted, relativize)
-
-#def guess_zone(domain_name):
-#    try:
-#        soa_answer = dns.resolver.query(domain_name, 'SOA')
-#        soa_rr = soa_answer.rrset[0]
-#        ns_answer = dns.resolver.query(domain_name, 'NS')
-#        mx_answer = dns.resolver.query(domain_name, 'MX')
-#        a_answer = dns.resolver.query(domain_name, 'A')
-#        txt_answer = dns.resolver.query(domain_name, 'TXT')
-#    except Exception, e:
-#        print e
-#        txt_answer = ''
-#        
-#    zone_text  = '\n; SOA Record\n'
-#    zone_text += '$ORIGIN %s.\n' % domain_name
-#    zone_text += '$TTL 1h\n'
-#    zone_text += '%s. IN SOA %s %s (\n' % (domain_name, soa_rr.mname.to_text(), soa_rr.rname.to_text())
-#    zone_text += '  %s ; serial number of this zone file\n' % soa_rr.serial
-#    zone_text += '  %s ; slave refresh\n' % soa_rr.refresh
-#    zone_text += '  %s ; slave retry time in case of a problem\n' % soa_rr.retry
-#    zone_text += '  %s ; slave expiration time\n' % soa_rr.expire
-#    zone_text += '  %s ; maximum caching time in case of failed lookups\n' % soa_rr.minimum
-#    zone_text += ')\n'
-#    zone_text += '\n; NS Records\n'
-#    zone_text += ns_answer.rrset.to_text() + '\n'
-#    zone_text += '\n; MX Records\n'
-#    zone_text += mx_answer.rrset.to_text() + '\n'
-#    zone_text += '\n; A Records\n'
-#    zone_text += a_answer.rrset.to_text()  + '\n'
-#    if txt_answer:
-#        zone_text += txt_answer.rrset.to_text()  + '\n'
-#
-#    zone_text += '\n; Guessed Records\n'
-#    possible_cnames = ['@', 'www', 'www1', 'www2', 'ftp', 'webmail', 'mail', 'mail1', 'mail2' 'smtp', 'imap', 'pop', 'ns1', 'ns2', 'ns3', 'ns4']
-#    for cn in possible_cnames:
-#        try: 
-#            a_answer = dns.resolver.query('%s.%s.' % (cn, domain_name), 'A')
-#            zone_text += a_answer.rrset.to_text()  + '\n'
-#        except:
-#            pass
-#        try:
-#            cn_answer = dns.resolver.query('%s.%s.' % (cn, domain_name), 'CNAME')
-#            zone_text += cn_answer.rrset.to_text()  + '\n'
-#        except:
-#            pass
-#    print zone_text
-#
-#    try:
-#        zone = dns.zone.from_text(zone_text)
-#        return zone
-#    except Exception, e:
-#        print e
-#        return False
-#        
-#def axfr_zone(domain_name, dns_server):
-#    try:
-#        zone = dns.zone.from_xfr(dns.query.xfr(dns_server, domain_name))
-#        return zone
-#    except Exception, e:
-#        print e
-#        return False
-#       
-
