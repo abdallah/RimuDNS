@@ -24,7 +24,7 @@ except ImportError:
         if line.startswith('VERSION'):
             VERSION = \
                 line.split('=')[1].replace('"', '').replace("'", '').strip()
-requirements = ['lxml', 'urllib2', 'pythondns']
+requirements = ['lxml', 'dnspython']
 
 setup(name=NAME,
       version=VERSION,
