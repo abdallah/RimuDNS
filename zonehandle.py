@@ -24,8 +24,7 @@ class ZoneHandle:
         self.dns_name = dns.name.Name((domain_name,))
         self.domain_name = domain_name
         self.zone = dns.zone.Zone(self.dns_name)
-        self.possible_subdomains = ['@', 
-                                    'www', 'www1', 'www2', 
+        self.possible_subdomains = ['www', 'www1', 'www2', 
                                     'ftp', 
                                     'webmail', 'mail', 'mail1', 'mail2' 'smtp', 'imap', 'pop', 
                                     'ns1', 'ns2', 'ns3', 'ns4']
@@ -35,26 +34,26 @@ class ZoneHandle:
     def from_axfr(self, dns_server):
         try:
             self.zone = dns.zone.from_xfr(dns.query.xfr(dns_server, self.domain_name))
-            return True
+            return self.zone
         except Exception, e:
             if self.debug: print e
-            return False
+            raise e
 
     def from_file(self, file):
         try:
             self.zone = dns.zone.from_file(file, self.domain_name)
-            return True
+            return self.zone
         except Exception, e:
             if self.debug: print e
-            return False
+            raise e
         
     def from_text(self, text):
         try:
             self.zone = dns.zone.from_text(text, self.domain_name)
-            return True
+            return self.zone
         except Exception, e:
             if self.debug: print e
-            return False
+            raise e
     
     def from_records_dict(self, records_dict):
         try:
@@ -109,7 +108,7 @@ class ZoneHandle:
         except Exception, e:
             print e
             if self.debug: print e
-            return False
+            raise e
         
     def to_records_dict(self):
         records_dict = { 'SOA': [], 'A': [], 'MX': [], 'NS': [], 'TXT': [], 'CNAME': [] }
@@ -163,24 +162,24 @@ class ZoneHandle:
             return records_dict
         except Exception, e:
             if self.debug: print e
-            return False
+            raise e
 
     def from_guessing(self):
         if not self._guess_soa(): 
             raise Exception('Unable to guess SOA!')
         if not self._guess_ns():
-            if self.debug: print 'Unable to guess NS records'
+            if self.debug: raise Exception( 'Unable to guess NS records')
         if not self._guess_mx():
-            if self.debug: print 'Unable to guess MX records'
+            if self.debug: raise Exception('Unable to guess MX records')
         if not self._guess_a():
-            if self.debug: print 'Unable to guess A records'
+            if self.debug: raise Exception('Unable to guess A records')
         if not self._guess_cname():
-            if self.debug: print 'Unable to guess CNAME records'
+            if self.debug: raise Exception('Unable to guess CNAME records')
         if not self._guess_txt():
-            if self.debug: print 'Unable to guess TXT records'
+            if self.debug: raise Exception('Unable to guess TXT records')
         
         if self.debug: print self.zone.items()
-        return True
+        return self.zone
             
     def _guess_soa(self):
         try:
@@ -276,4 +275,8 @@ class ZoneHandle:
             return False
 
     def to_file(self, file, sorted=True, relativize=True):
-        self.zone.to_file(file, sorted, relativize)
+        try:
+            self.zone.to_file(file, sorted, relativize)
+            return True 
+        except Exception, e:
+            raise e

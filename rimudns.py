@@ -72,10 +72,10 @@ class RimuDNS:
             root = objectify.fromstring(response)
             if str(root.is_ok).startswith('OK'):
                 self.record_count = root.record_count
-                return True
+                return self.record_count
         except Exception, e:
             if self.debug: print e.read()
-            return False
+            raise e
         
     
     def list_zones(self):
@@ -98,6 +98,7 @@ class RimuDNS:
                     zones.append(zoneinfo) 
         except Exception, e:
             if self.debug: print e.read()
+            raise e
         return zones
         
     def create_zone(self, zone_name):
@@ -112,9 +113,9 @@ class RimuDNS:
             if self.debug: print response
             root = objectify.fromstring(response)
             if str(root.is_ok).startswith('OK'):
-                return True
+                return zone_name
         except urllib2.HTTPError, e:
-            return "Error: %s" % e.read()
+            raise e
             
     def delete_zone(self, zone_name):
         '''Delete a DNS zone.
@@ -128,9 +129,9 @@ class RimuDNS:
             if self.debug: print response
             root = objectify.fromstring(response)
             if str(root.is_ok).startswith('OK'):
-                return True
-        except urllib2.HTTPError, e:
-            return "Error: %s" % e.read()
+                return zone_name
+        except Exception, e:
+            raise e
             
     def convert_to_slave(self, zone_name, master_ip): 
         '''Convert a zone to a slave zone with the specified master name server IP address.
@@ -144,9 +145,9 @@ class RimuDNS:
             if self.debug: print response
             root = objectify.fromstring(response)
             if str(root.is_ok).startswith('OK'):
-                return True
+                return zone_name
         except urllib2.HTTPError, e:
-            return "Error: %s" % e.read()
+            raise e
             
     def convert_to_regular(self, zone_name): 
         '''Convert a zone from a slave zone back to a 'regular' zone.
@@ -160,9 +161,9 @@ class RimuDNS:
             if self.debug: print response
             root = objectify.fromstring(response)
             if str(root.is_ok).startswith('OK'):
-                return True
+                return zone_name
         except urllib2.HTTPError, e:
-            return "Error: %s" % e.read()
+            raise e
             
     def list_records(self, zone_name, all_records=False):
         '''Retrieve a list of records with the specified name.
@@ -184,7 +185,7 @@ class RimuDNS:
                     records[record_type].append(record.attrib)
                 return records
         except Exception, e:
-            print e.read()
+            raise e
             
 
             
@@ -208,10 +209,10 @@ class RimuDNS:
             root = objectify.fromstring(response)
             if str(root.is_ok).startswith('OK'):
                 self.result_counts = root.result_counts.attrib
-                return True
+                return self.result_counts
         except Exception, e:
             if self.debug: print e.read()
-            return False
+            raise e
 
     def delete_record(self, host, value, record_type='A'):
         '''Delete an IP Address (A) record
@@ -229,10 +230,10 @@ class RimuDNS:
             root = objectify.fromstring(response)
             if str(root.is_ok).startswith('OK'):
                 self.result_counts = root.result_counts.attrib
-                return True
+                return self.result_counts
         except Exception, e:
             if self.debug: print e.read()
-            return False
+            raise e
             
             
            
@@ -268,10 +269,10 @@ class RimuDNS:
             root = objectify.fromstring(response)
             if str(root.is_ok).startswith('OK'):
                 self.result_counts = root.result_counts.attrib
-                return True
+                return self.result_counts
         except urllib2.HTTPError, e:
             if self.debug: "Error: %s" % e.read()
-            return False
+            raise e
         
     def to_file(self, zone_name, file, records_dict=None):
         '''Export zone to file
@@ -286,6 +287,7 @@ class RimuDNS:
                 zh.to_file(file)
         except Exception, e:
             if self.debug: print e
+            raise e
             
     def import_zone(self, zone_name, method, param=None, dryrun=False):
         '''Import zone 
@@ -296,7 +298,7 @@ class RimuDNS:
         try:
             if method==ZoneHandle.IMPORT_AXFR:
                 zh.from_axfr(param)
-            elif method==ZoneHandle.IMPORT_FILE:
+            elif method==ZoneHandle.IMPORT_FILE: 
                 zh.from_file(param)
             elif method==ZoneHandle.IMPORT_TEXT:
                 zh.from_text(param)
@@ -307,7 +309,7 @@ class RimuDNS:
                 
         except Exception, e:
                 if self.debug: print e
-                return False
+                raise e
             
         records_dict = zh.to_records_dict()
         if not dryrun:
@@ -319,6 +321,7 @@ class RimuDNS:
                         self.set_record(record['name'], record['content'], record_type, record['prio'], record['ttl'])
                     except Exception, e:
                         if self.debug: print e
+                        raise e
                     
         return records_dict
             
