@@ -50,6 +50,7 @@
 import urllib2
 from lxml import objectify
 from zonehandle import ZoneHandle
+import consts
 
 class RimuDNS:
     
@@ -58,6 +59,11 @@ class RimuDNS:
         self.debug = False
         self.base_url = 'https://rimuhosting.com' 
         
+    def use_rimuhosting(self):
+        self.base_url = consts.rimu_base_url
+        
+    def use_zonomi(self):
+        self.base_url = consts.zonomi_base_url
         
     def change_ip(self, old_ip, new_ip):
         '''Change an IP across all your zones.
@@ -65,7 +71,7 @@ class RimuDNS:
         
         '''
         url = '%s/dns/ipchange.jsp?old_ip=%s&new_ip=%s&api_key=%s' % (self.base_url, old_ip, new_ip, self.apikey)
-        req = urllib2.Request(url)
+        req = urllib2.Request(url, headers={'User-Agent': consts.user_agent})
         try:
             response = urllib2.urlopen(req).read()
             if self.debug: print response
@@ -85,7 +91,7 @@ class RimuDNS:
         '''
         zones = []
         url = '%s/dns/dyndns.jsp?action=QUERYZONES&api_key=%s' % (self.base_url, self.apikey)
-        req = urllib2.Request(url)
+        req = urllib2.Request(url, headers={'User-Agent': consts.user_agent})
         try:
             response = urllib2.urlopen(req).read()
             if self.debug: print response
@@ -107,7 +113,7 @@ class RimuDNS:
 
         '''
         url = '%s/dns/addzone.jsp?name=%s&api_key=%s' % (self.base_url, zone_name, self.apikey)
-        req = urllib2.Request(url)
+        req = urllib2.Request(url, headers={'User-Agent': consts.user_agent})
         try:
             response = urllib2.urlopen(req).read()
             if self.debug: print response
@@ -123,7 +129,7 @@ class RimuDNS:
 
         '''
         url = '%s/dns/dyndns.jsp?action=DELETEZONE&name=%s&api_key=%s' % (self.base_url, zone_name, self.apikey)
-        req = urllib2.Request(url)
+        req = urllib2.Request(url, headers={'User-Agent': consts.user_agent})
         try:
             response = urllib2.urlopen(req).read()
             if self.debug: print response
@@ -139,7 +145,7 @@ class RimuDNS:
 
         '''
         url = '%s/dns/converttosecondary.jsp?name=%s&master=%s&api_key=%s' % (self.base_url, zone_name, master_ip, self.apikey)
-        req = urllib2.Request(url)
+        req = urllib2.Request(url, headers={'User-Agent': consts.user_agent})
         try:
             response = urllib2.urlopen(req).read()
             if self.debug: print response
@@ -155,7 +161,7 @@ class RimuDNS:
 
         '''
         url = '%s/dns/converttosecondary.jsp?name=%s&master=%s&api_key=%s' % (self.base_url, zone_name, self.apikey)
-        req = urllib2.Request(url)
+        req = urllib2.Request(url, headers={'User-Agent': consts.user_agent})
         try:
             response = urllib2.urlopen(req).read()
             if self.debug: print response
@@ -172,7 +178,7 @@ class RimuDNS:
         '''
         if all_records: zone_name = '**.%s' % zone_name
         url = '%s/dns/dyndns.jsp?action=QUERY&name=%s&api_key=%s' % (self.base_url, zone_name, self.apikey)
-        req = urllib2.Request(url)
+        req = urllib2.Request(url, headers={'User-Agent': consts.user_agent})
         try:
             response = urllib2.urlopen(req).read()
             if self.debug: print response
@@ -202,7 +208,7 @@ class RimuDNS:
             url += '&prio=%s' % prio
         if ttl: 
             url += '&ttl=%s' % ttl
-        req = urllib2.Request(url)
+        req = urllib2.Request(url, headers={'User-Agent': consts.user_agent})
         try:
             response = urllib2.urlopen(req).read()
             if self.debug: print response
@@ -223,7 +229,7 @@ class RimuDNS:
         url += '&name=%s' % host
         url += '&value=%s' % value
         url += '&type=%s' % record_type
-        req = urllib2.Request(url)
+        req = urllib2.Request(url, headers={'User-Agent': consts.user_agent})
         try:
             response = urllib2.urlopen(req).read()
             if self.debug: print response
@@ -262,7 +268,7 @@ class RimuDNS:
                 if self.debug: print url_part
                 url += url_part
             if self.debug: print url 
-        req = urllib2.Request(url)
+        req = urllib2.Request(url, headers={'User-Agent': consts.user_agent})
         try:
             response = urllib2.urlopen(req).read()
             if self.debug: print response
