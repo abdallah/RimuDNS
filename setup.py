@@ -2,12 +2,12 @@
 # -*- encoding: utf-8 -*-
 __author__ = "Abdallah Deeb <abdallah@deeb.me>"
 import os
-from setuptools import setup, find_packages
+from setuptools import setup
 NAME = "rimudns"
 GITHUB_URL = "https://github.com/abdallah/%s" % (NAME)
 DESCRIPTION = "Python interface to RimuHosting/Zonomi DNS "
 
-VERSION = "0.0.0"
+VERSION = "0.0.1"
 
 
 def read(fname):
@@ -28,21 +28,22 @@ requirements = ['lxml', 'dnspython']
 
 setup(name=NAME,
       version=VERSION,
-      download_url="%s/zipball/%s" % (GITHUB_URL, VERSION),
+      # download_url="%s/zipball/master" % (GITHUB_URL, VERSION),
+      download_url="%s/zipball/master" % GITHUB_URL,
       description=DESCRIPTION,
-      install_requires=requirements,
+      install_requires=['lxml', 'dnspython'],
       author='Abdallah Deeb',
       author_email='abdallah@deeb.me',
       url=GITHUB_URL,
       long_description=read('README.md'),
-      license='GPLv3',
+      license='GPLv3+',
       zip_safe=False,
-      packages=find_packages(exclude=['tests', 'debian']),
+      packages=['rimudns'],
       classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Console',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
+        'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
         'Programming Language :: Python',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Software Development :: Libraries :: Python Modules',
