@@ -311,7 +311,7 @@ class RimuDNS:
             elif method==ZoneHandle.IMPORT_DICT:
                 zh.from_records_dict(param)
             elif method==ZoneHandle.IMPORT_GUESS:
-                zh.from_guessing()
+                zh.from_guessing(param)
                 
         except Exception, e:
                 if self.debug: print e

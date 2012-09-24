@@ -164,7 +164,9 @@ class ZoneHandle:
             if self.debug: print e
             raise e
 
-    def from_guessing(self):
+    def from_guessing(self, extra_names=None):
+        if extra_names: 
+            self.possible_subdomains.extend(x for x in extra_names if x not in self.possible_subdomains) 
         if not self._guess_soa(): 
             raise Exception('Unable to guess SOA!')
         if not self._guess_ns():
