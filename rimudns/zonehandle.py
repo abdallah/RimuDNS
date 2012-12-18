@@ -63,7 +63,7 @@ class ZoneHandle:
                 if rtype=='SOA' and len(records)>0: 
                     soa_rec = records[0]
                     mname, rname, serial, refresh, retry, expire, minimum = soa_rec['content'].split(' ')
-                    if self.domain_name!=soa_rec['name']:
+                    if self.domain_name!=soa_rec['name'] and soa_rec['name']!='@':
                         if self.debug: print 'Domain name does not match'
                         return False
                     zone_text += '\n; SOA Record\n'

@@ -208,6 +208,8 @@ class RimuDNS:
             url += '&prio=%s' % prio
         if ttl: 
             url += '&ttl=%s' % ttl
+        if self.debug: 
+            print 'URL: '+url
         req = urllib2.Request(url, headers={'User-Agent': consts.user_agent})
         try:
             response = urllib2.urlopen(req).read()
@@ -320,11 +322,17 @@ class RimuDNS:
         records_dict = zh.to_records_dict()
         if not dryrun:
             created = self.create_zone(zone_name)
-            for record_type, records in records:
+            for record_type in records_dict:
                 if record_type=='SOA': continue
-                for record in records:
+                record_list = records_dict[record_type]
+                for record in record_list:
                     try:
-                        self.set_record(record['name'], record['content'], record_type, record['prio'], record['ttl'])
+                        record_name = zone_name if record['name']=='@' else record['name']
+                        record_name = record_name.strip('.')
+                        if not record_name.endswith(zone_name): record_name = '%s.%s' % (record_name, zone_name)
+                        record_name = record_name.strip('.')
+                        record_content = record['content'].strip('.')
+                        self.set_record(record_name, record_content, record_type, record['prio'], record['ttl'])
                     except Exception, e:
                         if self.debug: print e
                         raise e
