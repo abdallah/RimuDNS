@@ -321,22 +321,35 @@ class RimuDNS:
             
         records_dict = zh.to_records_dict()
         if not dryrun:
-            created = self.create_zone(zone_name)
+            try:
+                created = self.create_zone(zone_name)
+            except:
+                created = False
             for record_type in records_dict:
-                if record_type=='SOA': continue
+                if record_type=='SOA': continue #TODO: get the docs on this?
                 record_list = records_dict[record_type]
+                updates_list = []
                 for record in record_list:
-                    try:
-                        record_name = zone_name if record['name']=='@' else record['name']
-                        record_name = record_name.strip('.')
-                        if not record_name.endswith(zone_name): record_name = '%s.%s' % (record_name, zone_name)
-                        record_name = record_name.strip('.')
-                        record_content = record['content'].strip('.')
-                        self.set_record(record_name, record_content, record_type, record['prio'], record['ttl'])
+                    record_name = zone_name if record['name']=='@' else record['name']
+                    record_name = record_name.strip('.')
+                    if not record_name.endswith(zone_name): record_name = '%s.%s' % (record_name, zone_name)
+                    record_name = record_name.strip('.')
+                    record_content = record['content'].strip('.')
+                    if record_type in ['MX', 'NS']:
+                        entry = {'action': 'SET', 'host': record_name, 'value': record_content, 'type': record_type, 'prio': record['prio']}
+                        updates_list.append(entry)
+                    else:
+                        try:
+                            self.set_record(record_name, record_content, record_type, record['prio'], record['ttl'])
+                        except Exception, e:
+                            if self.debug: print e
+                            raise e
+                if updates_list: 
+                    try: 
+                        self.multiple_actions(updates_list)
                     except Exception, e:
                         if self.debug: print e
                         raise e
-                    
         return records_dict
             
             
